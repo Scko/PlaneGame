@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import *
+
 
 width, height = 640, 400
 
@@ -10,6 +10,8 @@ class Game:
         self.running = True
         self.screen = None
         self.size = self.width, self.height = 640, 400
+        self.title = "Plane Shooty"
+        self.clock = pygame.time.Clock()
         self.plane = Triangle()
         self.bullets = []
         self.background = pygame.image.load("trees.jpg")
@@ -17,31 +19,45 @@ class Game:
     def initialize(self):
         pygame.init()
         self.screen = pygame.display.set_mode(self.size, pygame.HWSURFACE)
+        pygame.display.set_caption(self.title)
         self.running = True
 
     def event(self, event):
         if event.type == pygame.QUIT:
             self.running = False
-        if event.type == KEYDOWN:
-            if event.key == pygame.K_UP:
-                self.plane.ypos -= 10
-            if event.key == pygame.K_DOWN:
-                self.plane.ypos += 10
-            if event.key == pygame.K_LEFT:
-                self.plane.xpos -= 10
-            if event.key == pygame.K_RIGHT:
-                self.plane.xpos += 10
-            if event.key == pygame.K_SPACE:
-                self.bullets.append(Bullet(self.plane.xpos+self.plane.frontandcenter, self.plane.ypos))
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP]:
+            self.plane.ypos -= self.plane.speed
+        if keys[pygame.K_DOWN]:
+            self.plane.ypos += self.plane.speed
+        if keys[pygame.K_LEFT]:
+            self.plane.xpos -= self.plane.speed
+            self.plane.goingLeft = True
+            self.plane.goingRight = False
+        elif keys[pygame.K_RIGHT]:
+            self.plane.xpos += self.plane.speed
+            self.plane.goingLeft = False
+            self.plane.goingRight = True
+        else:
+            self.plane.goingLeft = False
+            self.plane.goingRight = False
+        if keys[pygame.K_SPACE]:
+            self.bullets.append(Bullet(self.plane.xpos+self.plane.frontandcenter, self.plane.ypos))
 
     def loop(self):
-        self.screen.blit(self.background, (0, 0))
-        self.screen.blit(self.plane.image, (self.plane.xpos, self.plane.ypos))
         for bullet in self.bullets:
-            bullet.ypos += bullet.step_y
-            self.screen.blit(bullet.image, (bullet.xpos, bullet.ypos))
+            bullet.ypos -= bullet.speed
 
     def render(self):
+        self.screen.blit(self.background, (0, 0))
+        if not self.plane.goingLeft and not self.plane.goingRight:
+            self.screen.blit(self.plane.images[0], (self.plane.xpos, self.plane.ypos))
+        elif self.plane.goingLeft:
+            self.screen.blit(self.plane.images[1], (self.plane.xpos, self.plane.ypos))
+        elif self.plane.goingRight:
+            self.screen.blit(self.plane.images[3], (self.plane.xpos, self.plane.ypos))
+        for bullet in self.bullets:
+            self.screen.blit(bullet.image, (bullet.xpos, bullet.ypos))
         pygame.display.flip()
 
     def cleanup(self):
@@ -51,8 +67,10 @@ class Game:
         if self.initialize():
             self.running = False
 
-        pygame.key.set_repeat(50, 50)
+        pygame.key.set_repeat(30, 30)
         while self.running:
+            self.clock.tick(30)
+
             for event in pygame.event.get():
                 self.event(event)
             self.loop()
@@ -63,11 +81,14 @@ class Game:
 class Triangle:
 
     def __init__(self):
-        self.image = pygame.image.load("triangle.png")
+        self.images = [pygame.image.load("l0_Plane1.png"), pygame.image.load("l0_Plane2.png"),
+                       pygame.image.load("l0_Plane3.png"), pygame.image.load("l0_Plane4.png")]
+        self.currentImage = 0
+        self.goingLeft = False
+        self.goingRight = False
         self.xpos = 50
         self.ypos = 50
-        self.step_x = 10
-        self.step_y = 10
+        self.speed = 10
         self.frontandcenter = 25
 
 class Bullet:
@@ -76,8 +97,7 @@ class Bullet:
         self.image = pygame.image.load("bullet.png")
         self.xpos = xpos
         self.ypos = ypos
-        self.step_x = 0
-        self.step_y = -1
+        self.speed = 5
 
 if __name__ == "__main__":
     game = Game()
